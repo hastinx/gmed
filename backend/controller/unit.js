@@ -1,5 +1,7 @@
 const db = require('../config/db.js');
-const dbPromise = db.promise()
+const { countConversionQty } = require('../helper/index..js');
+const dbPromise = db.promise();
+// const helper = require('../helper')
 
 module.exports = {
     addDefaultUnit: async (req, res) => {
@@ -90,6 +92,23 @@ module.exports = {
         try {
             await dbPromise.query(`UPDATE default_unit SET conversion_unit='${unit}' WHERE id=${id}`);
             return res.status(200).json({ status: 'success', message: 'update unit successfully' })
+        } catch (error) {
+            return res.status(400).json({ status: 'failed' })
+        }
+    },
+    addProductUnit: async (req, res) => {
+        const { product, defaultUnitQty, defaultUnit, convertionUnitQty, conversionUnit } = req.body
+        try {
+            const [data] = await dbPromise.query(`SELECT * FROM stock`);
+            if (data.length > 0) {
+                return res.status(400).json({ status: 'failed', message: 'Product already in stock' })
+            }
+
+            let qty = countConversionQty(convertionUnitQty, defaultUnitQty)
+
+            await dbPromise.query(`INSERT INTO stock (product_id, default_unit_id, default_unit_qty, conversion_unit_id, conversion_unit_qty, qty) vALUES (${product},${defaultUnit},${defaultUnitQty},${conversionUnit},${convertionUnitQty},${qty})`)
+
+            return res.status(200).json({ status: 'success', message: 'add product unit successfully' })
         } catch (error) {
             return res.status(400).json({ status: 'failed' })
         }
